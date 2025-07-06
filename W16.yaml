@@ -10,11 +10,16 @@ Parameters:
     Type: String
     Default: 0.0.0.0/0
 
+Mappings:
+  UbuntuAMI:
+    us-east-1:
+      ubuntu2204: "ami-0a7d80731ae1b2435"
+
 Resources:
   MyVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/24
+      CidrBlock: 10.0.0.0/16
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
@@ -113,10 +118,17 @@ Resources:
                   - s3:PutObject
                 Resource: !Sub arn:aws:s3:::${MyS3Bucket}/*
 
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2InstanceRole 
+      Path: "/"
+
   MyEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c55b159cbfafe1f0
+      ImageId: !FindInMap [UbuntuAMI, !Ref "AWS::Region", ubuntu2204]
       InstanceType: t2.micro
       KeyName: !Ref KeyName
       NetworkInterfaces:
@@ -125,7 +137,7 @@ Resources:
           SubnetId: !Ref PublicSubnet
           GroupSet:
             - !Ref EC2SecurityGroup
-      IamInstanceProfile: !Ref EC2InstanceRole
+      IamInstanceProfile: !Ref EC2InstanceProfile
       Tags:
         - Key: Name
           Value: MyWebServer
